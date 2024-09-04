@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Connect to OBS</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f4f4f4;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+                height: 100vh;
+            }
+
+            form,
+            .connected-message {
+                background: #fff;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                width: 300px;
+                display: none; /* Hide by default */
+            }
+
+            form.active,
+            .connected-message.active {
+                display: block; /* Show when active */
+            }
+
+            h1 {
+                color: #333;
+                text-align: center;
+            }
+
+            label {
+                display: block;
+                margin-bottom: 8px;
+                color: #555;
+            }
+
+            input[type='text'],
+            input[type='password'] {
+                width: 100%;
+                padding: 8px;
+                margin-bottom: 12px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                box-sizing: border-box;
+            }
+
+            button {
+                width: 100%;
+                background-color: #28a745;
+                color: white;
+                padding: 10px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 16px;
+            }
+
+            button:hover {
+                background-color: #218838;
+            }
+
+            #message {
+                margin-top: 20px;
+                font-weight: bold;
+                text-align: center;
+            }
+
+            .instructions {
+                background: #fff;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                margin-bottom: 20px;
+                width: 300px;
+            }
+
+            .instructions h2 {
+                font-size: 18px;
+                color: #333;
+                margin-bottom: 10px;
+                text-align: center;
+            }
+
+            .instructions p {
+                font-size: 14px;
+                color: #555;
+                margin-bottom: 10px;
+                text-align: center;
+            }
+
+            .instructions ol {
+                font-size: 14px;
+                color: #555;
+                margin-bottom: 10px;
+                padding-left: 20px;
+            }
+
+            .connected-message p {
+                margin: 0;
+                padding: 1rem 0;
+                color: #333;
+                font-size: 16px;
+                text-align: center;
+            }
+
+            .connected-message a {
+                color: #007bff;
+                text-decoration: none;
+                font-size: 14px;
+                word-break: break-all;
+                display: block;
+                text-align: center;
+                margin-top: 10px;
+            }
+
+            .connected-message a:hover {
+                text-decoration: underline;
+            }
+        </style>
+        <!-- Include jQuery -->
+        <script
+            src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"
+        ></script>
+    </head>
+    <body>
+        <div class="instructions">
+            <h2>Instructions</h2>
+            <p>
+                This app allows you to connect to your OBS instance using its
+                WebSocket API.
+            </p>
+            <h3>To Enable OBS WebSocket:</h3>
+            <ol>
+                <li>Open OBS Studio.</li>
+                <li>
+                    Go to <strong>Tools > WebSocket Server Settings</strong>.
+                </li>
+                <li>Enable the WebSocket server by checking the box.</li>
+                <li>
+                    Note the server address (default is
+                    <code>ws://localhost:4455</code>) and set a password if
+                    required.
+                </li>
+                <li>Click <strong>OK</strong> to apply the settings.</li>
+            </ol>
+            <h3>How This App Works:</h3>
+            <p>
+                After entering the OBS WebSocket URL and password, this app will
+                connect to your OBS instance and check the connection status
+                periodically. The connected WebSocket address will be provided,
+                which you can use in other applications.
+            </p>
+        </div>
+
+        <form id="obsForm" class="active">
+            <h1>Connect to OBS</h1>
+            <label for="webSocketUrl">OBS WebSocket URL:</label>
+            <input
+                type="text"
+                id="webSocketUrl"
+                name="webSocketUrl"
+                value="ws://localhost:4455"
+                required
+            />
+            <label for="webSocketPass">OBS WebSocket Password:</label>
+            <input
+                type="password"
+                id="webSocketPass"
+                name="webSocketPass"
+                value="BiaYZkAlOZbNHbM1"
+                required
+            />
+            <button type="submit">Connect</button>
+            <p id="message"></p>
+        </form>
+
+        <div class="connected-message">
+            <p id="statusMessage">Currently Connected</p>
+            <p>Access your OBS WebSocket at:</p>
+            <a id="obsLink" href=""></a>
+        </div>
+
+        <script>
+            $(document).ready(function () {
+                $('#obsForm').on('submit', function (event) {
+                    event.preventDefault();
+
+                    const webSocketUrl = $('#webSocketUrl').val();
+                    const webSocketPass = $('#webSocketPass').val();
+
+                    $.ajax({
+                        url: '/obs',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ webSocketUrl, webSocketPass }),
+                        success: function (data) {
+                            $('#obsForm').removeClass('active');
+                            $('.connected-message').addClass('active');
+
+                            const currentUrl = window.location.href;
+                            $('#obsLink')
+                                .text(currentUrl)
+                                .attr('href', currentUrl);
+
+                            // Start checking connection status every minute
+                            checkConnectionStatus();
+                            setInterval(checkConnectionStatus, 60000); // 60,000ms = 1 minute
+                        },
+                        error: function (xhr) {
+                            $('#message')
+                                .text(
+                                    xhr.responseJSON.error ||
+                                        'Failed to connect to OBS'
+                                )
+                                .css('color', 'red');
+                        }
+                    });
+                });
+
+                function checkConnectionStatus() {
+                    $.ajax({
+                        url: '/obs/status',
+                        type: 'GET',
+                        contentType: 'application/json',
+                        success: function (data) {
+                            const statusMessage = $('#statusMessage');
+                            if (data.isConnected) {
+                                statusMessage
+                                    .text('Currently Connected')
+                                    .css('color', 'green');
+                            } else {
+                                statusMessage
+                                    .text('Disconnected from OBS')
+                                    .css('color', 'red');
+
+                                // Revert back to the form
+                                $('.connected-message').removeClass('active');
+                                $('#obsForm').addClass('active');
+                            }
+                        },
+                        error: function () {
+                            console.error('Error checking connection status');
+                        }
+                    });
+                }
+            });
+        </script>
+    </body>
+</html>
