@@ -14,6 +14,12 @@ app.use(express.json());
 // Use the OBS routes
 app.use('/obs', obsRouter);
 
+// Health check route
+app.get('/health', (req, res) => {
+    res.json({ status: 'API is healthy!' });
+});
+
+
 app.listen(PORT, async () => {
     console.log(`API is running on http://localhost:${PORT}`);
 

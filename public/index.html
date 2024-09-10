@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Connect to OBS</title>
         <style>
+            /* Your existing styles */
             body {
                 font-family: Arial, sans-serif;
                 background-color: #f4f4f4;
@@ -13,7 +14,7 @@
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                flex-direction: column;
+                gap: 20vh;
                 height: 100vh;
             }
 
@@ -83,27 +84,6 @@
                 width: 300px;
             }
 
-            .instructions h2 {
-                font-size: 18px;
-                color: #333;
-                margin-bottom: 10px;
-                text-align: center;
-            }
-
-            .instructions p {
-                font-size: 14px;
-                color: #555;
-                margin-bottom: 10px;
-                text-align: center;
-            }
-
-            .instructions ol {
-                font-size: 14px;
-                color: #555;
-                margin-bottom: 10px;
-                padding-left: 20px;
-            }
-
             .connected-message p {
                 margin: 0;
                 padding: 1rem 0;
@@ -112,21 +92,30 @@
                 text-align: center;
             }
 
-            .connected-message a {
-                color: #007bff;
-                text-decoration: none;
+            .connected-message #obsLink {
                 font-size: 14px;
-                word-break: break-all;
-                display: block;
                 text-align: center;
                 margin-top: 10px;
+                word-break: break-all;
             }
 
-            .connected-message a:hover {
-                text-decoration: underline;
+            .connected-message #copyButton {
+                display: block;
+                margin: 10px auto;
+                padding: 10px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                text-align: center;
+            }
+
+            .connected-message #copyButton:hover {
+                background-color: #0056b3;
             }
         </style>
-        <!-- Include jQuery -->
         <script
             src="https://code.jquery.com/jquery-3.7.1.min.js"
             integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
@@ -188,7 +177,8 @@
         <div class="connected-message">
             <p id="statusMessage">Currently Connected</p>
             <p>Access your OBS WebSocket at:</p>
-            <a id="obsLink" href=""></a>
+            <span id="obsLink"></span>
+            <button id="copyButton">Click to Copy</button>
         </div>
 
         <script>
@@ -209,9 +199,7 @@
                             $('.connected-message').addClass('active');
 
                             const currentUrl = window.location.href;
-                            $('#obsLink')
-                                .text(currentUrl)
-                                .attr('href', currentUrl);
+                            $('#obsLink').text(currentUrl);
 
                             // Start checking connection status every minute
                             checkConnectionStatus();
@@ -226,6 +214,18 @@
                                 .css('color', 'red');
                         }
                     });
+                });
+
+                $('#copyButton').on('click', function () {
+                    const obsLinkText = $('#obsLink').text();
+                    navigator.clipboard.writeText(obsLinkText).then(
+                        function () {
+                            alert('Copied to clipboard: ' + obsLinkText);
+                        },
+                        function () {
+                            alert('Failed to copy text.');
+                        }
+                    );
                 });
 
                 function checkConnectionStatus() {
